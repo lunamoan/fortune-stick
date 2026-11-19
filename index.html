@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>每日一签 · Daily Fortune</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+    background: radial-gradient(ellipse at 50% 30%, #4a1420 0%, #2a0a12 60%, #1a060b 100%);
+    color: #f7e8c9; font-family: "PingFang SC", "Microsoft YaHei", serif;
+    padding: 48px 20px 60px;
+  }
+  h1 { font-size: 32px; letter-spacing: 8px; color: #f2c14e; text-shadow: 0 2px 18px rgba(242,193,78,.35); }
+  .sub { color: #c9a86a; font-size: 13px; letter-spacing: 3px; margin: 10px 0 8px; }
+  .date { color: #8f7350; font-size: 12px; margin-bottom: 30px; }
+  .tube {
+    width: 130px; height: 190px; cursor: pointer; position: relative;
+    background: linear-gradient(90deg, #7c1d1d, #a52a2a 45%, #7c1d1d);
+    border-radius: 14px 14px 22px 22px;
+    border: 2px solid #d4a017;
+    box-shadow: 0 18px 40px rgba(0,0,0,.5), inset 0 0 24px rgba(0,0,0,.45);
+    display: flex; align-items: flex-start; justify-content: center;
+    transition: transform .1s;
+  }
+  .tube:hover { transform: translateY(-3px); }
+  .tube.shaking { animation: shake .55s ease-in-out; }
+  @keyframes shake {
+    0%,100% { transform: rotate(0); } 20% { transform: rotate(-7deg) translateY(-4px); }
+    40% { transform: rotate(6deg); } 60% { transform: rotate(-5deg) translateY(-3px); } 80% { transform: rotate(4deg); }
+  }
+  .sticks { display: flex; gap: 5px; padding-top: 10px; }
+  .stick {
+    width: 9px; height: 74px; border-radius: 5px 5px 2px 2px;
+    background: linear-gradient(180deg, #e8b64c, #c98f2d);
+    box-shadow: inset 0 0 3px rgba(0,0,0,.35);
+  }
+  .tube .label {
+    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+    writing-mode: vertical-rl; letter-spacing: 6px; font-size: 17px; color: #ffe9a8;
+    text-shadow: 0 1px 4px rgba(0,0,0,.6);
+  }
+  .tip { margin-top: 18px; color: #a5854f; font-size: 13px; letter-spacing: 1px; }
+  .result {
+    margin-top: 34px; width: 100%; max-width: 430px; display: none;
+    background: linear-gradient(180deg, #fdf6dd, #f7e8c9);
+    color: #4a2c14; border-radius: 6px; padding: 28px 26px 24px;
+    box-shadow: 0 20px 50px rgba(0,0,0,.55);
+    border-top: 6px solid #a52a2a;
+    animation: rise .5s ease;
+  }
+  @keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+  .result .no { font-size: 12px; letter-spacing: 2px; color: #a52a2a; }
+  .result .level { font-size: 27px; letter-spacing: 6px; margin: 8px 0 4px; color: #7c1d1d; font-weight: 700; }
+  .result .poem { font-size: 16px; line-height: 2; letter-spacing: 2px; margin: 10px 0; white-space: pre-line; }
+  .result .jie {
+    border-top: 1px dashed #c9a86a; padding-top: 12px;
+    font-size: 14px; line-height: 1.9; color: #6b4423;
+  }
+  .again { margin-top: 22px; display: none; background: none; border: 1px solid #d4a017; color: #f2c14e;
+    padding: 9px 24px; border-radius: 999px; cursor: pointer; letter-spacing: 3px; font-size: 14px; }
+  .again:hover { background: rgba(242,193,78,.12); }
+</style>
+</head>
+<body>
+  <h1>每日一签</h1>
+  <p class="sub">心诚则灵 · 一天一签</p>
+  <p class="date" id="date"></p>
+  <div class="tube" id="tube" title="点我摇签">
+    <div class="sticks"><div class="stick"></div><div class="stick"></div><div class="stick"></div><div class="stick"></div><div class="stick"></div></div>
+    <div class="label">有求必应</div>
+  </div>
+  <p class="tip" id="tip">点签筒，摇出今天的签</p>
+  <div class="result" id="result">
+    <div class="no" id="rNo"></div>
+    <div class="level" id="rLevel"></div>
+    <div class="poem" id="rPoem"></div>
+    <div class="jie" id="rJie"></div>
+  </div>
+  <button class="again" id="again">再摇一次（不作数版）</button>
+<script>
+  const FORTUNES = [
+    ['上上签', '月出东山上\n星河正荡漾', '今天运气站在你这边。想做的事别等，先动手，好消息在路上。'],
+    ['上上签', '春风得意马蹄疾\n一日看尽长安花', '适合表白、投简历、买一直想买的东西。犹豫就会败北。'],
+    ['上签', '柳暗花明又一村\n山重水复亦有门', '卡住的事今天会松动。别硬闯，换个方向走，门在侧面。'],
+    ['上签', '好风凭借力\n送我上青云', '会有人顺手推你一把。记得开口求助，这不丢人。'],
+    ['上签', '守得云开见月明\n静待花开会有时', '前阵子的坚持开始有回音了。今天适合把成果亮出来。'],
+    ['中上签', '小荷才露尖尖角\n早有蜻蜓立上头', '才华藏不住啦。哪怕只露一点点，也会被对的人看见。'],
+    ['中签', '行到水穷处\n坐看云起时', '计划赶不上变化？没关系，今天的主题是随缘，反而有惊喜。'],
+    ['中签', '不听老人言\n开心好几年', '签筒开玩笑的。但今天确实适合听自己的，别被别人的经验吓住。'],
+    ['中签', '吃饱喝足睡个够\n烦恼自然绕道走', '今日宜：干饭、午睡、早下班。大事明天再说。'],
+    ['中签', '千里之行始于足下\n外卖之程始于下单', '想做的事拆小一点，先完成第一步。晚饭可以奖励自己点个好的。'],
+    ['中平签', '宜躺平，忌内耗\n宜摸鱼，忌较真', '今天能量偏低，省着点用。把难的活排到明天，今天只做顺手的。'],
+    ['中平签', '退一步海阔天空\n忍一时越想越气', '所以别忍太久。有话好好说出来，今天沟通运其实不差。'],
+    ['下签', '诸事不宜\n唯宜抱紧被子', '签筒建议：今天低调行事，重要决定押后。早点睡，明天重摇。'],
+    ['下签', '出门忘带伞\n手机只剩三格电', '小倒霉预警：出门前检查钥匙手机充电宝。避开冲动消费。'],
+    ['上上签', '心想事成日\n好事成双时', '许的愿会被听见。今天适合把愿望说出口，说出来才算数。'],
+    ['上签', '桃花朵朵开\n好运自然来', '社交运上升。老朋友的消息别拖着回，缘分都在细节里。'],
+    ['中上签', '书中自有黄金屋\n剧中自有颜如玉', '适合学习和追更。随手翻开的那一页，可能藏着答案。'],
+    ['中签', '财不入急门\n福不入偏门', '钱的事慢慢来。今天适合记账、整理钱包，不适合上头下单。'],
+  ];
+  const now = new Date();
+  document.getElementById('date').textContent =
+    `${now.getFullYear()} 年 ${now.getMonth()+1} 月 ${now.getDate()} 日`;
+  // 以日期为种子：同一天摇出同一支签
+  function seedRand(seed) {
+    let x = seed;
+    return () => { x = (x * 1103515245 + 12345) % 2147483648; return x / 2147483648; };
+  }
+  const daySeed = now.getFullYear() * 10000 + (now.getMonth()+1) * 100 + now.getDate();
+  let drawn = false;
+  function draw(official) {
+    const rand = official ? seedRand(daySeed) : Math.random;
+    const idx = Math.floor(rand() * FORTUNES.length);
+    const [level, poem, jie] = FORTUNES[idx];
+    document.getElementById('rNo').textContent = `第 ${idx + 1} 签` + (official ? ' · 今日正签' : ' · 这一支不作数哦');
+    document.getElementById('rLevel').textContent = level;
+    document.getElementById('rPoem').textContent = poem;
+    document.getElementById('rJie').textContent = '解签：' + jie;
+    const r = document.getElementById('result');
+    r.style.display = 'block';
+    document.getElementById('again').style.display = 'inline-block';
+    document.getElementById('tip').textContent = official ? '这就是你今天的签，明天再来。' : '正签只有一支，上面那支才是今天的命。';
+  }
+  const tube = document.getElementById('tube');
+  tube.onclick = () => {
+    if (tube.classList.contains('shaking')) return;
+    tube.classList.add('shaking');
+    setTimeout(() => {
+      tube.classList.remove('shaking');
+      if (!drawn) { drawn = true; draw(true); } else { draw(false); }
+    }, 560);
+  };
+  document.getElementById('again').onclick = () => {
+    tube.classList.add('shaking');
+    setTimeout(() => { tube.classList.remove('shaking'); draw(false); }, 560);
+  };
+</script>
+</body>
+</html>
